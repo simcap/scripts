@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+
+require 'dailystandup'
+
+current_dir = File.dirname __FILE__
+
+subdirs = Dir.glob(File.join(current_dir, '**')).select {|f| File.directory? f}
+
+git_repos = subdirs.inject([]) do |git_dirs, dir_path|
+  Dir.chdir dir_path do 
+    git_dir = File.join(Dir.pwd, '.git')
+    git_dirs << git_dir if File.directory?(git_dir)
+  end
+  git_dirs
+end
+
+git_repos.each do |repo|
+  Dir.chdir repo do
+    puts repo
+  end  
+end
