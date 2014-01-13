@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-current_dir = ARGV[0] || File.dirname(__FILE__)
+current_dir = ARGV[0] || '.'
 git_author = `git config --get github.user`.chomp
 
 today = Time.now.strftime '%F'
@@ -20,6 +20,6 @@ end
 git_repos.each do |repo|
   Dir.chdir repo do
     puts File.basename(File.dirname(repo))
-    puts `git log --since=3.day --date=short --format='%an|%cn|%ad|%s' --author=#{git_author}`
+    puts `git log --since= --date=short --format='%an|%cn|%ad|%s' --author=#{git_author}`
   end  
 end
