@@ -1,8 +1,11 @@
 #!/usr/bin/env ruby
 
-require 'dailystandup'
+current_dir = ARGV[0] || File.dirname(__FILE__)
+git_author = `git config --get github.user`.chomp
 
-current_dir = File.dirname __FILE__
+today = Time.now.strftime '%F'
+
+puts git_author 
 
 subdirs = Dir.glob(File.join(current_dir, '**')).select {|f| File.directory? f}
 
@@ -16,6 +19,7 @@ end
 
 git_repos.each do |repo|
   Dir.chdir repo do
-    puts repo
+    puts File.basename(File.dirname(repo))
+    puts `git log --since=3.day --date=short --format='%an|%cn|%ad|%s' --author=#{git_author}`
   end  
 end
