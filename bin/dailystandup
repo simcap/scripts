@@ -5,21 +5,31 @@ git_author = `git config --get github.user`.chomp
 
 today = Time.now.strftime '%F'
 
-puts git_author 
-
 subdirs = Dir.glob(File.join(current_dir, '**')).select {|f| File.directory? f}
 
 git_repos = subdirs.inject([]) do |git_dirs, dir_path|
   Dir.chdir dir_path do 
     git_dir = File.join(Dir.pwd, '.git')
-    git_dirs << git_dir if File.directory?(git_dir)
+    git_dirs << File.dirname(git_dir) if File.directory?(git_dir)
   end
   git_dirs
 end
 
+commits = Hash.new {|h,k| h[k] = []}
+
 git_repos.each do |repo|
   Dir.chdir repo do
-    puts File.basename(File.dirname(repo))
-    puts `git log --since= --date=short --format='%an|%cn|%ad|%s' --author=#{git_author}`
+    logs = `git log --date=short --format='%an|%cn|%ad|%s' --author=#{git_author}`
+    logs.each_line do |line|
+      date, message = line.match(/(\d{4}-\d{2}-\d{2})\|(.+)/).captures
+      commits[File.basename repo] << message if date == today
+    end
   end  
+end
+
+commits.each do |repo_name, messages|
+  puts "[#{repo_name}]"
+  messages.each do |message|
+    puts "\t#{message}" 
+  end
 end
