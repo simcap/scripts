@@ -7,11 +7,12 @@ today = Time.now.strftime '%F'
 
 subdirs = Dir.glob(File.join(current_dir, '**')).select {|f| File.directory? f}
 
+def git_repo? full_path
+  File.directory?(File.join(full_path, '.git'))
+end
+
 git_repos = subdirs.inject([]) do |git_dirs, dir_path|
-  Dir.chdir dir_path do 
-    git_dir = File.join(Dir.pwd, '.git')
-    git_dirs << File.dirname(git_dir) if File.directory?(git_dir)
-  end
+  git_dirs << dir_path if git_repo?(dir_path) 
   git_dirs
 end
 
