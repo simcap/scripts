@@ -1,9 +1,13 @@
 #!/usr/bin/env ruby
 
+require 'date'
+
 current_dir = ARGV[0] || '.'
 git_author = `git config --get github.user`.chomp
 
-today = Time.now.strftime '%F'
+today = Date.today
+offset = today.monday? ? 3 : 0
+work_day = (Date.today - offset).strftime '%F'
 
 subdirs = Dir.glob(File.join(current_dir, '**')).select {|f| File.directory? f}
 
@@ -23,7 +27,7 @@ git_repos.each do |repo|
     logs = `git log --date=short --format='%an|%cn|%ad|%s' --author=#{git_author}`
     logs.each_line do |line|
       date, message = line.match(/(\d{4}-\d{2}-\d{2})\|(.+)/).captures
-      commits[File.basename repo] << message if date == today
+      commits[File.basename repo] << message if date == work_today
     end
   end  
 end
