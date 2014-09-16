@@ -1,0 +1,18 @@
+#!/usr/bin/ruby
+# Sort all your todos by corresponding ages
+
+require 'date'
+
+blame_commands = %x{git grep -n TODO | cut -d ':' -f1,2 | sed -E 's/([^:]*):([^:]*)/git blame \\1 -L \\2,\\2/'}.lines
+
+results = blame_commands.map do |blame_command|
+  filename = blame_command.match(/git blame (\S+)/)[1]
+  blame_line = %x{#{blame_command}}
+  blame_line.match /^\w{8}.*(\d{4})-(\d{2})-(\d{2})[^)]+\)(.+)$/
+  days_elasped = ((Time.now - DateTime.new($1.to_i, $2.to_i, $3.to_i).to_time) / (24 * 60 * 60)).to_i
+  [days_elasped.to_i, "(#{days_elasped} days ago) #{filename} -> #{$4}\n"]
+end
+
+results.sort! {|x,y| y[0] <=> x[0]}
+
+puts Hash[results].values

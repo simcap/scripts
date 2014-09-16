@@ -1,0 +1,78 @@
+#!/usr/bin/ruby
+# Get latest deployed github view for given app. Also to github compare 2 deployed apps.
+
+GITHUB_ACCOUNT = 'simcap'
+
+script_name = File.basename($0)
+
+if ARGV.empty?
+  abort <<-USAGE
+    Usage:
+    $ #{script_name} my-heroku-repo-name
+    or to compare
+    $ #{script_name} my-herokul-repo-staging my-heroku-repo-integration
+  USAGE
+end
+
+class DeployedApp < Struct.new(:name)
+  include Comparable
+
+  def sha
+    @sha ||= latest_sha 
+  end
+
+  def env
+    @env ||= self.name.match(/(integration|staging|production)/)[1]
+  end
+
+  def env_as_index
+    {'integration' => 3, 'staging' => 2, 'production' => 1}.fetch(env)
+  end
+
+  def <=>(another)
+    self.env_as_index <=> another.env_as_index
+  end
+
+  def to_s
+    self.name
+  end
+
+  private 
+
+  def latest_sha
+    releases = %x{heroku releases --app #{self.name}}.lines
+    releases.select!{|r| r =~ /Deploy|Promote/}
+    releases.first.match /\A(v\d{2,4})\s+/
+
+    puts "Getting info on release #{$1}"
+
+    release_info = %x{heroku releases:info #{$1} --app #{self.name}}
+    release_info.lines.grep(/\AChange:/i).first.match(/\s(\w{7})$/)
+
+    if $1
+      return $1
+    else
+      abort "[!] Did not find any sha!"
+    end
+  end
+end
+
+def repo_name
+  abort "! Do not know this app '#{ARGV[0]}'"
+  ARGV[0]
+end
+
+first_app = DeployedApp.new(ARGV[0])
+
+if ARGV.size == 2
+  second_app = DeployedApp.new(ARGV[1])
+  apps = [first_app, second_app].sort
+  comparison = "#{apps[0].sha}...#{apps[1].sha}"
+  url = "https://github.com/#{GITHUB_ACCOUNT}/#{repo_name}/compare/#{comparison}"
+  puts "Comparing #{apps} at #{url}"
+  %x{open #{url}}
+else
+  url = "https://github.com/#{GITHUB_ACCOUNT}/#{repo_name}/commits/#{first_app.sha}"
+  puts "#{first_app} currently at #{url}"
+  %x{open #{url}}
+end
